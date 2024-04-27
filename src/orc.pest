@@ -1,0 +1,30 @@
+WHITESPACE        = _{ " " | "\t" | "\r" | "\n" }
+COMMENT           = _{ SingleLineComment | MultiLineComment }
+SingleLineComment =  { "//" ~ (!"\n" ~ ANY)* }
+MultiLineComment  =  { "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+
+integer            = @{ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
+float              = @{ integer ~ "." ~ ASCII_DIGIT+ }
+variable           = @{ ("_" | ASCII_ALPHA) ~ ("_" | ASCII_ALPHANUMERIC)* }
+number             = _{ float | integer }
+literal            =  { number | variable }
+binaryCmp          = _{ "==" | "!=" | "<=" | ">=" | "<" | ">" }
+booleanCmp         = _{ "||" | "&&" }
+bitShift           = _{ "<<" | ">>" | "^" }
+addition           =  { "+" | "-" }
+mult               =  { "*" | "/" | "%" }
+pow                =  { "**" }
+binaryPrio0Operand =  { binaryCmp | booleanCmp }
+binaryPrio1Operand =  { bitShift }
+binaryPrio2Operand =  { addition }
+binaryPrio3Operand =  { mult }
+binaryPrio4Operand =  { pow }
+binaryPrio0        =  _{ binaryPrio1 ~ (binaryPrio0Operand ~ binaryPrio1)* }
+binaryPrio1        =  _{ binaryPrio2 ~ (binaryPrio1Operand ~ binaryPrio2)* }
+binaryPrio2        =  _{ binaryPrio3 ~ (binaryPrio2Operand ~ binaryPrio3)* }
+binaryPrio3        =  _{ binaryPrio4 ~ (binaryPrio3Operand ~ binaryPrio4)* }
+binaryPrio4        =  _{ literal ~ (binaryPrio4Operand ~ literal)* }
+
+expr = { binaryPrio0 }
+
+main = { SOI ~ expr ~ EOI }
