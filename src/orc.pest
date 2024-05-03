@@ -1,30 +1,34 @@
-WHITESPACE        = _{ " " | "\t" | "\r" | "\n" }
+// No whitespace allowed between digits
+WHITESPACE        = _{ " " | "\n" | "\r" | "\t" }
 COMMENT           = _{ SingleLineComment | MultiLineComment }
 SingleLineComment =  { "//" ~ (!"\n" ~ ANY)* }
 MultiLineComment  =  { "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 
-integer            = @{ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
-float              = @{ integer ~ "." ~ ASCII_DIGIT+ }
-variable           = @{ ("_" | ASCII_ALPHA) ~ ("_" | ASCII_ALPHANUMERIC)* }
-number             = _{ float | integer }
-literal            =  { number | variable }
-binaryCmp          = _{ "==" | "!=" | "<=" | ">=" | "<" | ">" }
-booleanCmp         = _{ "||" | "&&" }
-bitShift           = _{ "<<" | ">>" | "^" }
-addition           =  { "+" | "-" }
-mult               =  { "*" | "/" | "%" }
-pow                =  { "**" }
-binaryPrio0Operand =  { binaryCmp | booleanCmp }
-binaryPrio1Operand =  { bitShift }
-binaryPrio2Operand =  { addition }
-binaryPrio3Operand =  { mult }
-binaryPrio4Operand =  { pow }
-binaryPrio0        =  _{ binaryPrio1 ~ (binaryPrio0Operand ~ binaryPrio1)* }
-binaryPrio1        =  _{ binaryPrio2 ~ (binaryPrio1Operand ~ binaryPrio2)* }
-binaryPrio2        =  _{ binaryPrio3 ~ (binaryPrio2Operand ~ binaryPrio3)* }
-binaryPrio3        =  _{ binaryPrio4 ~ (binaryPrio3Operand ~ binaryPrio4)* }
-binaryPrio4        =  _{ literal ~ (binaryPrio4Operand ~ literal)* }
+integer_literal = @{ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
+float_literal   = @{ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* ~ "." ~ ASCII_DIGIT* }
+variable   = @{ ("_" | ASCII_ALPHA) ~ ("_" | ASCII_ALPHANUMERIC)* }
 
-expr = { binaryPrio0 }
+unary_minus =  { "-" }
+primary     = _{ float_literal | integer_literal | variable | "(" ~ expr ~ ")" }
+atom        = _{ unary_minus? ~ primary }
 
-main = { SOI ~ expr ~ EOI }
+bin_op   = _{ add | subtract | multiply | divide | modulo }
+add      =  { "+" }
+subtract =  { "-" }
+multiply =  { "*" }
+divide   =  { "/" }
+modulo   =  { "%" }
+
+type = { variable ~ type_block? }
+type_block = { "<" ~ type ~ ("," ~ type)* ~ ">" }
+type_annotation = { ":" ~ type }
+
+expr = { exp_block | bin_exp | "" }
+bin_exp = {atom ~ (bin_op ~ atom)*}
+
+exp_block = { "{" ~ statement* ~ expr ~ "}" }
+
+statement = { (let_statement | expr) ~ ";" }
+let_statement = { "let" ~ variable ~ type_annotation? ~ ("=" ~ expr)?}
+
+main = _{ SOI ~ expr ~ EOI }
